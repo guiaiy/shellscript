@@ -1,0 +1,35 @@
+#!/bin/bash
+IMG_DIR="/var/lib/libvirt/images"
+XML_DIR="/etc/libvirt/qemu"
+virdef(){
+virsh define $XML_DIR/$1  &> /dev/null
+echo -e "$2 \e[32;1m[OK]\e[0m"
+}
+
+create(){
+qemu-img create -f qcow2 -b  $IMG_DIR/$1  $IMG_DIR/$2  &> /dev/null
+}
+
+rmimg(){
+if [ -e $IMG_DIR/$1 ]; then
+    rm -rf $IMG_DIR/$1
+fi
+}
+
+undef(){
+id=`virsh dominfo $1 2> /dev/null | grep running`
+if  [ -n "$id"  ];then
+        /usr/bin/virsh destroy $1 &> /dev/null
+fi
+virsh undefine $1 &>/dev/null
+}
+for i in $@
+do
+undef $i
+rmimg ${i}.qcow2
+create .${i}bak.qcow2 ${i}.qcow2
+cp $IMG_DIR/.rhel7.xml $XML_DIR/${i}.xml
+sed -i "s/rh7_template/$1/g" $XML_DIR/${i}.xml
+virdef ${i}.xml $i
+virsh start $i
+done

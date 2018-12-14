@@ -1,0 +1,6 @@
+192.168.4.11 redis.sh
+192.168.4.12 redis.sh
+192.168.4.13 redis.sh
+192.168.4.14 redis.sh
+192.168.4.15 redis.sh
+192.168.4.16 redis.sh

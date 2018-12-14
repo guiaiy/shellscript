@@ -1,0 +1,59 @@
+#!/bin/bash
+##注释部分为直接备份磁盘数据
+#IMG_DIR="/var/lib/libvirt/images"
+#XML_DIR="/etc/libvirt/qemu"
+#virdef(){
+#virsh define $XML_DIR/$1  &> /dev/null
+#echo -e "$2 \e[32;1m[OK]\e[0m"
+#}
+#
+#create(){
+#qemu-img create -f qcow2 -b  $IMG_DIR/$1  $IMG_DIR/$2  &> /dev/null
+#}
+#
+#rmimg(){
+#if [ -e $IMG_DIR/$1 ]; then
+#    rm -rf $IMG_DIR/$1
+#fi
+#}
+#
+#undef(){
+#id=`virsh dominfo $1 2> /dev/null | grep running`
+#if  [ -n "$id"  ];then
+#        /usr/bin/virsh destroy $1 &> /dev/null
+#fi
+#virsh undefine $1 &>/dev/null
+#}
+#for i in $@
+#do
+#undef $i
+#rmimg ${i}.qcow2
+#create .${i}bak.qcow2 ${i}.qcow2
+#cp $XML_DIR/.localhost.xml $XML_DIR/${i}.xml
+#sed -i "s/localhost/$1/g" $XML_DIR/${i}.xml
+#virdef ${i}.xml $i
+#virsh start $i
+#done
+
+
+##以下为快照恢复
+IMG_DIR="/var/lib/libvirt/images"
+while :
+do
+	for j in $@
+	do
+		virsh list | grep $j &> /dev/null
+		if [ $? -eq 0 ];then
+			virsh destroy $j &> /dev/null
+		else
+			break
+		fi
+	done
+	break
+done
+for i in $@
+do
+	N=`qemu-img snapshot -l $IMG_DIR/${i}.qcow2 | awk 'END{print $1}'`
+	qemu-img snapshot -a $N $IMG_DIR/${i}.qcow2
+	virsh start $i
+done
